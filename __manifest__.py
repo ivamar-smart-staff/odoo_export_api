@@ -11,6 +11,7 @@
     'data': [
         'security/ir.model.access.csv',
         'views/jwt_token_views.xml',
+        'data/default_config.xml',
     ],
     'installable': True,
     'application': False,

@@ -2,8 +2,8 @@ from odoo import models, fields, api, exceptions
 import jwt
 import datetime
 
-class JWTToken(models.Model):
-    _name = 'jwt.token'
+class AuthModel(models.Model):
+    _name = 'auth.model'
     _description = 'JWT Token Configuration'
 
     name = fields.Char(string='Configuration Name', required=True)

@@ -5,7 +5,7 @@ import logging
 
 _logger = logging.getLogger(__name__)
 
-class JWTController(http.Controller):
+class AuthController(http.Controller):
 
     @http.route('/api/auth/', type='http', auth='none', methods=['POST'], csrf=False)
     def generate_token(self, **kwargs):
@@ -23,7 +23,7 @@ class JWTController(http.Controller):
             if not uid:
                 return self._error_response('Invalid credentials', 401)
 
-            jwt_model = request.env['jwt.token'].sudo().search([], limit=1)
+            jwt_model = request.env['auth.model'].sudo().search([], limit=1)
             if not jwt_model:
                 return self._error_response('JWT configuration missing', 500)
 

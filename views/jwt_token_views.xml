@@ -1,7 +1,7 @@
 <odoo>
-    <record id="view_jwt_token_form" model="ir.ui.view">
-        <field name="name">jwt.token.form</field>
-        <field name="model">jwt.token</field>
+    <record id="view_auth_model_form" model="ir.ui.view">
+        <field name="name">auth.model.form</field>
+        <field name="model">auth.model</field>
         <field name="arch" type="xml">
             <form>
                 <sheet>
@@ -16,9 +16,9 @@
         </field>
     </record>
 
-    <record id="view_jwt_token_tree" model="ir.ui.view">
-        <field name="name">jwt.token.tree</field>
-        <field name="model">jwt.token</field>
+    <record id="view_auth_model_tree" model="ir.ui.view">
+        <field name="name">auth.model.tree</field>
+        <field name="model">auth.model</field>
         <field name="arch" type="xml">
             <tree>
                 <field name="name"/>
@@ -28,13 +28,13 @@
         </field>
     </record>
 
-    <menuitem id="menu_jwt_config" name="JWT Configuration" parent="base.menu_administration"/>
-    
-    <record id="action_jwt_token" model="ir.actions.act_window">
+    <menuitem id="menu_auth_config" name="JWT Configuration" parent="base.menu_administration"/>
+
+    <record id="action_auth_model" model="ir.actions.act_window">
         <field name="name">JWT Configuration</field>
-        <field name="res_model">jwt.token</field>
+        <field name="res_model">auth.model</field>
         <field name="view_mode">tree,form</field>
     </record>
 
-    <menuitem id="menu_jwt_token" name="JWT Tokens" parent="menu_jwt_config" action="action_jwt_token"/>
+    <menuitem id="menu_auth_model" name="JWT Tokens" parent="menu_auth_config" action="action_auth_model"/>
 </odoo>
