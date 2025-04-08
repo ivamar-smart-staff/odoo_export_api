@@ -2,6 +2,7 @@ from odoo import http
 from odoo.http import request, Response
 import json
 import logging
+from odoo.addons.odoo_export_api.services.auth_service import AuthService
 
 _logger = logging.getLogger(__name__)
 
@@ -11,26 +12,20 @@ class AuthController(http.Controller):
     def generate_token(self, **kwargs):
         try:
             post = request.httprequest.get_json(force=True)
-
             login = post.get('login')
             password = post.get('password')
 
             if not login or not password:
                 return self._error_response('Login and password required', 400)
 
-            uid = request.session.authenticate(request.db, login, password)
-
-            if not uid:
-                return self._error_response('Invalid credentials', 401)
-
-            jwt_model = request.env['auth.model'].sudo().search([], limit=1)
-            if not jwt_model:
-                return self._error_response('JWT configuration missing', 500)
-
-            token = jwt_model.generate_token(uid)
-            return self._success_response({'token': token})
+            token, exp_time = AuthService(request.env).authenticate_and_generate_token(login, password)
+            return self._success_response({
+                'token': token,
+                'expires_at': exp_time.strftime('%d/%m/%Y %H:%M:%S')
+            })
 
         except Exception as e:
+            _logger.exception("Error generating token")
             return self._error_response(str(e), 500)
 
     def _error_response(self, message, status):
@@ -46,7 +41,17 @@ class AuthController(http.Controller):
             status=200,
             mimetype='application/json'
         )
-    
+
     @http.route('/api/ping', type='http', auth='none', methods=['GET'], csrf=False)
     def ping(self, **kw):
-        return "pong"
+        try:
+            auth_header = request.httprequest.headers.get('Authorization')
+            if not auth_header or not auth_header.startswith('Bearer '):
+                raise Exception("Missing or invalid Authorization header")
+
+            token = auth_header.split(' ')[1]
+            payload = request.env['auth.model'].sudo().verify_token(token)
+
+            return Response("pong", status=200, mimetype='text/plain')
+        except Exception as e:
+            return Response(f"Unauthorized: {str(e)}", status=401, mimetype='text/plain')
