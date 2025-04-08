@@ -1,16 +1,26 @@
 from odoo import models, fields, api, exceptions
+import secrets
+import string
 import jwt
 import datetime
+
+def generate_random_secret_key():
+    import secrets
+    import string
+    alphabet = string.ascii_letters + string.digits + "-_."
+    return ''.join(secrets.choice(alphabet) for _ in range(24))
 
 class AuthModel(models.Model):
     _name = 'auth.model'
     _description = 'JWT Token Configuration'
-
     name = fields.Char(string='Configuration Name', required=True)
-    secret_key = fields.Char(string='JWT Secret Key', required=True, default='your-secret-key-here')
-    algorithm = fields.Char(string='Algorithm', default='HS256')
-    expiration_hours = fields.Integer(string='Token Expiration (hours)', default=24)
-
+    secret_key = fields.Char(
+        string="Secret Key",
+        default=lambda self: generate_random_secret_key(),
+        required=True,)
+    algorithm = fields.Char(string="Algorithm", default="HS256", required=True)
+    expiration_hours = fields.Integer(string="Expiration (Hours)", default=24)
+    
     def generate_token(self, user_id):
         payload = {
             'user_id': user_id,

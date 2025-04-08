@@ -1,7 +1,6 @@
 <odoo>
     <record id="default_jwt_config" model="auth.model">
         <field name="name">Default JWT Config</field>
-        <field name="secret_key">my-super-secret-key</field>
         <field name="algorithm">HS256</field>
         <field name="expiration_hours">24</field>
     </record>
