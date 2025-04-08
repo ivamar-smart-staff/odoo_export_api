@@ -7,7 +7,7 @@ _logger = logging.getLogger(__name__)
 
 class JWTController(http.Controller):
 
-    @http.route('/api/auth/jwt', type='http', auth='none', methods=['POST'], csrf=False)
+    @http.route('/api/auth/', type='http', auth='none', methods=['POST'], csrf=False)
     def generate_token(self, **kwargs):
         try:
             post = request.httprequest.get_json(force=True)

@@ -1,1 +1,1 @@
-from . import jwt_controller
+from . import auth_controller

@@ -1,0 +1,19 @@
+# Arquivos Python compilados
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+*.pyd
+
+# Arquivos de logs
+*.log
+
+# Diretórios temporários
+*.egg-info/
+*.eggs/
+*.idea/
+*.vscode/
+.DS_Store
+
+# Ambiente virtual, se estiver dentro do projeto
+venv/
+env/
