@@ -18,8 +18,11 @@ class AuthController(http.Controller):
             if not login or not password:
                 return self._error_response('Login and password required', 400)
 
-            token = AuthService(request.env).authenticate_and_generate_token(login, password)
-            return self._success_response({'token': token})
+            token, exp_time = AuthService(request.env).authenticate_and_generate_token(login, password)
+            return self._success_response({
+                'token': token,
+                'expires_at': exp_time.strftime('%d/%m/%Y %H:%M:%S')
+            })
 
         except Exception as e:
             _logger.exception("Error generating token")
