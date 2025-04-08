@@ -3,6 +3,7 @@ import secrets
 import string
 import jwt
 import datetime
+import pytz 
 
 def generate_random_secret_key():
     import secrets
@@ -22,12 +23,16 @@ class AuthModel(models.Model):
     expiration_hours = fields.Integer(string="Expiration (Hours)", default=24)
     
     def generate_token(self, user_id):
+        exp_utc = datetime.datetime.utcnow() + datetime.timedelta(hours=self.expiration_hours)
         payload = {
             'user_id': user_id,
-            'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=self.expiration_hours),
+            'exp': exp_utc,
             'iat': datetime.datetime.utcnow()
         }
-        return jwt.encode(payload, self.secret_key, algorithm=self.algorithm)
+        token = jwt.encode(payload, self.secret_key, algorithm=self.algorithm)
+        sao_paulo_tz = pytz.timezone('America/Sao_Paulo')
+        exp_local = exp_utc.replace(tzinfo=pytz.utc).astimezone(sao_paulo_tz)
+        return token, exp_local
 
     @api.model
     def verify_token(self, token):

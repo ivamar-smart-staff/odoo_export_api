@@ -14,8 +14,10 @@ class AuthService:
         jwt_config = self.env['auth.model'].sudo().search([], limit=1)
         if not jwt_config:
             raise ValidationError("JWT configuration missing")
+        
+        token, exp_time = jwt_config.generate_token(uid)
 
-        return jwt_config.generate_token(uid)
+        return token, exp_time
 
     def _authenticate_user(self, login, password):
         return self.env['res.users'].sudo().authenticate(
