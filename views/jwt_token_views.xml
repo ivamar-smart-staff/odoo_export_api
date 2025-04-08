@@ -1,0 +1,40 @@
+<odoo>
+    <record id="view_jwt_token_form" model="ir.ui.view">
+        <field name="name">jwt.token.form</field>
+        <field name="model">jwt.token</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="secret_key"/>
+                        <field name="algorithm"/>
+                        <field name="expiration_hours"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_jwt_token_tree" model="ir.ui.view">
+        <field name="name">jwt.token.tree</field>
+        <field name="model">jwt.token</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="name"/>
+                <field name="algorithm"/>
+                <field name="expiration_hours"/>
+            </tree>
+        </field>
+    </record>
+
+    <menuitem id="menu_jwt_config" name="JWT Configuration" parent="base.menu_administration"/>
+    
+    <record id="action_jwt_token" model="ir.actions.act_window">
+        <field name="name">JWT Configuration</field>
+        <field name="res_model">jwt.token</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <menuitem id="menu_jwt_token" name="JWT Tokens" parent="menu_jwt_config" action="action_jwt_token"/>
+</odoo>
