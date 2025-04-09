@@ -34,9 +34,6 @@ class ClientsController(Controller):
 
         json_return = []
         for partner in partners:
-            # if product.partner_id.partner_latitude == 0 and product.partner_id.partner_longitude == 0:
-            #     request.env['products.model'].calculate_coordinates(product.partner_id.id)
-            #
             street = (partner.street or '') + ' ' + (partner.street2 or '')
             data = {
                 "id": partner.id,
