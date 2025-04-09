@@ -11,18 +11,24 @@ class ProductsController(Controller):
         products = request.env['res.company'].sudo().search([])
         json_return = []
         for product in products:
-            latlong = {product.partner_id.partner_latitude, product.partner_id.partner_longitude} if product.partner_id.partner_latitude != 0 and product.partner_id.partner_longitude != 0 else get_product_latlong()
-            object = {
+            if product.partner_id.partner_latitude == 0 and product.partner_id.partner_longitude == 0:
+                request.env['products.model'].calculate_coordinates(product.partner_id.id)
+
+            data = {
                 "id": product.id,
                 "cnpj": None,
-                "address": f"{product.street} - {product.street2} - {product.city}/{product.state_id}" or None,
+                "address": " - ".join(filter(None, [product.street, product.street2])) + f" - {product.city}/{product.state_id.name or ''}",
                 "billing_address": None,
                 "name": product.name,
                 "phone": None,
-                "lat": product.partner.id
+                "lat": product.partner_id.partner_latitude or None,
+                "long": product.partner_id.partner_longitude or None,
+                "sap": None,
+                "started_when": None,
+
 
             }
-            json_return.append(object)
+            json_return.append(data)
 
         return request.make_response(
             json.dumps(json_return),
