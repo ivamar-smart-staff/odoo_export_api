@@ -13,6 +13,9 @@
         'views/jwt_token_views.xml',
         'data/default_config.xml',
     ],
+    'external_dependencies': {
+        'python': ['pyjwt'],
+    },
     'installable': True,
     'application': False,
     'license': 'LGPL-3',
