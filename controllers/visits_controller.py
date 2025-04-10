@@ -36,7 +36,7 @@ class VisitsController(Controller):
                 "manager_name": team_member.crm_team_id.user_id.name,
                 "superintendent_name": None,
                 "indication_broker_name": None,
-                "sales_company_id": None, # todo: preciso verificar esse id
+                "sales_company_id": None, # todo: esse id é do sistema da incorporadora ou posso só colocar o do Odoo aleatório?
                 "another": None,
                 "product_id": team_member.company_id.unique_id, # todo: perguntar qual id deve ser puxado
                 "customer_id": None, # todo: não sei qual id puxar aqui
