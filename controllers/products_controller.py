@@ -56,7 +56,7 @@ class ProductsController(http.Controller):
                 if lat == 0 and lon == 0:
                     request.env['products.model'].calculate_coordinates(partner_id)
                     # Invalida o cache para forçar a nova leitura
-                    partner.invalidate_cache()
+                    #partner.invalidate_cache()
                     lat = partner.partner_latitude or 0
                     lon = partner.partner_longitude or 0
 
