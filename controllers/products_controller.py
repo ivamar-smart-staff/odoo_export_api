@@ -8,16 +8,17 @@ _logger = logging.getLogger(__name__)
 class ProductsController(http.Controller):
     @http.route('/api/products/', type='http', auth='none', methods=['GET'], csrf=False)
     def get_products(self):
-        # Validação do token via parâmetros (query string)
-        token = request.params.get('token')
-        if not token:
+        # Validação do token via header "Authorization"
+        auth_header = request.httprequest.headers.get('Authorization')
+        if not auth_header or not auth_header.startswith('Bearer '):
             return request.make_response(
-                json.dumps({"error": "Token não fornecido"}),
+                json.dumps({"error": "Token não fornecido no header de autorização"}),
                 status=401,
                 headers=[('Content-Type', 'application/json')]
             )
+        token = auth_header.split(' ')[1].strip()
         try:
-            # Valida o token utilizando o modelo de autenticação
+            # Verifica o token utilizando o modelo de autenticação
             request.env['auth.model'].sudo().verify_token(token)
         except Exception as e:
             _logger.exception("Token inválido: %s", e)

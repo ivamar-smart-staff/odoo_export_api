@@ -9,14 +9,15 @@ _logger = logging.getLogger(__name__)
 class ClientsController(Controller):
     @http.route('/api/clients/', type='http', auth='none', methods=['GET'], csrf=False)
     def get_clients(self):
-        # Validação do token via parâmetros (query string)
-        token = request.params.get('token')
-        if not token:
+        # Obtenção do token a partir do header 'Authorization'
+        auth_header = request.httprequest.headers.get('Authorization')
+        if not auth_header or not auth_header.startswith('Bearer '):
             return request.make_response(
-                json.dumps({"error": "Token não fornecido"}),
+                json.dumps({"error": "Token não fornecido no header de autorização"}),
                 status=401,
                 headers=[('Content-Type', 'application/json')]
             )
+        token = auth_header.split(' ')[1].strip()
         try:
             # Verifica o token usando o modelo de autenticação
             request.env['auth.model'].sudo().verify_token(token)
@@ -52,12 +53,12 @@ class ClientsController(Controller):
         users = request.env['res.users'].sudo().search([])
         removed_user_partner_ids = users.mapped('partner_id').ids
 
-        # Domínio atualizado: além de filtrar os parceiros removidos, filtra apenas os que não são empresas (is_company=False)
+        # Domínio: Filtra apenas parceiros que não estejam associados a usuários e que não sejam do tipo company
         domain = [
             ('id', 'not in', removed_user_partner_ids),
             ('is_company', '=', False)
         ]
-        
+
         # Consulta otimizada com paginação
         partners = request.env['res.partner'].sudo().search(
             domain,
