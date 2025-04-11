@@ -52,16 +52,27 @@ class AuthModel(models.Model):
         _logger.info("Chave JWT rotacionada")
 
     def generate_token(self, user_id):
+        # 1. Gera o token de 16 caracteres (4 blocos de 4)
+        alphabet = string.ascii_letters + string.digits
+        raw_token = ''.join(secrets.choice(alphabet) for _ in range(16))
+        formatted_token = '-'.join([raw_token[i:i+4] for i in range(0, 16, 4)])  # Ex: "8xiS-39PH-gHcC-3NPN"
+
+        # 2. Calcula o tempo de expiração (UTC → America/Sao_Paulo)
         exp_utc = datetime.datetime.utcnow() + datetime.timedelta(hours=self.expiration_hours)
+        sao_paulo_tz = pytz.timezone('America/Sao_Paulo')
+        exp_local = exp_utc.replace(tzinfo=pytz.utc).astimezone(sao_paulo_tz)
+
+        # 3. (Opcional) Se precisar, pode gerar um JWT também (mas não retorná-lo aqui)
         payload = {
             'user_id': user_id,
+            'token_str': formatted_token,  # Inclui o token formatado no payload
             'exp': exp_utc,
             'iat': datetime.datetime.utcnow()
         }
-        token = jwt.encode(payload, self.secret_key, algorithm=self.algorithm)
-        sao_paulo_tz = pytz.timezone('America/Sao_Paulo')
-        exp_local = exp_utc.replace(tzinfo=pytz.utc).astimezone(sao_paulo_tz)
-        return token, exp_local
+        jwt_token = jwt.encode(payload, self.secret_key, algorithm=self.algorithm)  # Não retornado
+
+        # 4. Retorna o token formatado E o tempo de expiração
+        return formatted_token, exp_local
 
     def verify_token(self, token):
         try:
@@ -74,36 +85,6 @@ class AuthModel(models.Model):
         except jwt.InvalidTokenError:
             raise exceptions.ValidationError('Token inválido')
 
-    def generate_refresh_token(self, user_id):
-        exp_utc = datetime.datetime.utcnow() + datetime.timedelta(days=self.refresh_token_expiry)
-        payload = {
-            'user_id': user_id,
-            'exp': exp_utc,
-            'type': 'refresh'
-        }
-        token = jwt.encode(payload, self.secret_key, algorithm=self.algorithm)
-        self.env['auth.refresh.token'].create({
-            'token': token,
-            'user_id': user_id,
-            'expiry_date': exp_utc
-        })
-        return token
-
-    def verify_refresh_token(self, token):
-        try:
-            payload = jwt.decode(token, self.secret_key, algorithms=[self.algorithm])
-            valid_count = self.env['auth.refresh.token'].search_count([
-                ('token', '=', token),
-                ('user_id', '=', payload['user_id']),
-                ('expiry_date', '>', fields.Datetime.now())
-            ])
-            if not valid_count:
-                raise jwt.InvalidTokenError("Refresh token revogado")
-            return payload
-        except jwt.ExpiredSignatureError:
-            raise exceptions.ValidationError('Refresh token expirado')
-        except jwt.InvalidTokenError:
-            raise exceptions.ValidationError('Refresh token inválido')
 
 class AuthRefreshToken(models.Model):
     """Modelo para gerenciamento de refresh tokens"""

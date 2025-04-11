@@ -3,6 +3,8 @@ from odoo.http import request
 import json
 import logging
 
+from odoo.addons.odoo_export_api.controllers.decorators import auto_authenticate
+
 _logger = logging.getLogger(__name__)
 
 class ProductsController(http.Controller):
