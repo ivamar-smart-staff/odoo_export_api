@@ -2,6 +2,7 @@ from odoo import http
 from odoo.http import request, Response, Controller
 from werkzeug.exceptions import BadRequest
 import json
+import re
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -28,36 +29,76 @@ class VisitsController(Controller):
         json_return = []
         for lead in leads:
             team_member = request.env['crm.team.member'].sudo().search([('email', '=', lead.user_id.login)],limit=1)
+            match lead.company_id.selection_base.id: # todo: adicionar os tipos no futuro
+                case 1:
+                    _logger.info("case 1")
+                    for integra in lead.company_id.vendas_ids:
+                        if not lead.chanel_1:
+                            main_media_id = None
+                            break
+
+                        if lead.team_id == integra.team_id:
+                            _logger.info("achou o team_id")
+                            media_column = integra.stand_id.media_column
+
+
+                            midia_nome = re.sub(r'\s*\d+$', '', lead.chanel_1.name.strip())
+                            columns_map = {
+                                'one': 'cod_midia1',
+                                'two': 'cod_midia2',
+                                'three': 'cod_midia3',
+                                'four': 'cod_midia4',
+                                'five': 'cod_midia5',
+                                'six': 'cod_midia6',
+                            }
+
+                            # Identifica qual coluna deve ser usada com base no 'media_column'
+                            column_name = columns_map.get(media_column)
+                            if not column_name:
+                                main_media_id = None
+                                break
+
+                            # Percorre as mídias para encontrar a que bate com 'midia_nome'
+                            for midia in lead.company_id.midia_ids:
+                                if midia.nome_midia == midia_nome:
+                                    # Retorna o valor da coluna correta, usando getattr
+                                    main_media_id = getattr(midia, column_name, None)
+                                else:
+                                    main_media_id = None
+
+                                break
+                            break
 
             data = {
                 "id": lead.id,
                 "third_party_id": None,
-                "broker_name": " - ".join([lead.user_id.name, team_member.sales_name]),
+                "broker_name": " - ".join(filter(None, [lead.user_id.name, team_member.sales_name])),
                 "manager_name": team_member.crm_team_id.user_id.name,
                 "superintendent_name": None,
                 "indication_broker_name": None,
-                "sales_company_id": None, # todo: esse id é do sistema da incorporadora ou posso só colocar o do Odoo aleatório?
-                "another": None,
-                "product_id": team_member.company_id.unique_id, # todo: perguntar qual id deve ser puxado
-                "customer_id": None, # todo: não sei qual id puxar aqui
-                "type_of": "FIRSTCONTACT", # todo: FIRSTCONTACT, RECURRENCE, PHONECONTACT - de onde eu puxo isso?
-                "out_of_service": "2024-01-02 00:00",  # todo: o que é isso
-                "created": "2024-01-02 11:33",
-                "justify_id": None, # todo: descobrir esse ID
-                "owner": False, # todo: true or false n sei oq é
-                "indication": False, # todo: true or false n sei oq é
-                "created_by": 2390, # todo: id broker
-                "changed_by": 5769, # todo id broker de novo
-                "changed_when": "2024-01-03 11:57", # todo: data da mudança
-                "main_media_id": 136, #todo: id da media
-                "corretor_account_id_crm": 1072, #todo: não sei o que é
+                "sales_company_id": lead.team_id.id,
+                # "another": None,
+                "product_id": lead.company_id.id,
+                "customer_id": lead.partner_id.id,
+                "type_of": lead.type_of_visit, # FIRSTCONTACT, RECURRENCE, PHONECONTACT - puxar de dentro do lead
+                "out_of_service": None,  # todo: data de cadastro de lead de uma data diferente do dia de hoje
+                "created": lead.create_date.isoformat() if lead.create_date else None,
+                "justify_id": None, # todo: não sabemos
+                "owner": None, # todo: é pra indicar se já comprou ou n
+                # "indication": False,
+                "created_by": lead.creator_user_id.id, # todo: id do usuário da recep que criou o lead
+                "changed_by": lead.last_editor_id.id, # todo id da ultima pessoa que atualizou o lead
+                "changed_when": lead.write_date.isoformat() if lead.write_date else None, # todo: data da mudança
+                "main_media_id": main_media_id, #todo: id do first channel
+                "deleted": lead.active, # todo: se o lead tá arquivado ou n
+                "corretor_account_id_crm": None, #todo: campo pra adicionar nos corretores da equipe de vendas com o usuário deles (ou adicionar no usuário interno deles)
                 "recebido_crm": False, #todo: talvez uma integração com a tabela de log
-                "regra3": False,  #todo: nao sei o que é
+                # "regra3": False,
                 "broker_email": lead.user_id.login,
-                "product_type_id": 371 #todo: id do tipo de produto?
+                "product_type_id": None #todo: se é residencial,
             }
 
-            # _logger.info("Data recebido: %s", data)
+
             json_return.append(data)
 
         total_count = request.env['crm.lead'].sudo().search_count([])
@@ -73,3 +114,7 @@ class VisitsController(Controller):
             }),
             headers=[('Content-Type', 'application/json')]
         )
+
+    # _logger.info("Data recebido1: %s", lead.user_id.name)
+    # _logger.info("Data recebido2: %s", team_member.sales_name)
+    # _logger.info("Data recebido3: %s", team_member)
