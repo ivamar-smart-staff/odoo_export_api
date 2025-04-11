@@ -7,6 +7,7 @@ _logger = logging.getLogger(__name__)
 
 class ProductsController(Controller):
     @http.route('/api/products/', type='http', auth='none', methods=['GET'], csrf=False)
+    @auto_authenticate
     def get_products(self):
         products = request.env['res.company'].sudo().search([])
         json_return = []
