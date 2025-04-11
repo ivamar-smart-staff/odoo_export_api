@@ -10,6 +10,25 @@ _logger = logging.getLogger(__name__)
 class VisitsController(Controller):
     @http.route('/api/visits/', type='http', auth='none', methods=['GET'], csrf=False)
     def get_visits(self):
+        # Validação do token via header "Authorization"
+        auth_header = request.httprequest.headers.get("Authorization")
+        if not auth_header or not auth_header.startswith("Bearer "):
+            return request.make_response(
+                json.dumps({"error": "Token não fornecido no header de autorização"}),
+                status=401,
+                headers=[("Content-Type", "application/json")]
+            )
+        token = auth_header.split(" ")[1].strip()
+        try:
+            request.env["auth.model"].sudo().verify_token(token)
+        except Exception as e:
+            _logger.exception("Token inválido: %s", e)
+            return request.make_response(
+                json.dumps({"error": "Token inválido"}),
+                status=401,
+                headers=[("Content-Type", "application/json")]
+            )
+
         page = int(request.params.get('page'))
         page_size = int(request.params.get('page_size'))
 
