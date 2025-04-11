@@ -73,26 +73,3 @@ class AuthModel(models.Model):
             raise exceptions.ValidationError('Token expirado')
         except jwt.InvalidTokenError:
             raise exceptions.ValidationError('Token inválido')
-
-
-class AuthRefreshToken(models.Model):
-    """Modelo para gerenciamento de refresh tokens"""
-    _name = 'auth.refresh.token'
-    _description = 'Refresh Tokens'
-
-    token = fields.Char(string="Token", required=True, index=True)
-    user_id = fields.Many2one('res.users', string="User", required=True)
-    expiry_date = fields.Datetime(string="Expiry Date", required=True)
-    created_at = fields.Datetime(string="Created At", default=fields.Datetime.now)
-
-class AuthSecurityLog(models.Model):
-    """Modelo para logs de segurança"""
-    _name = 'auth.security.log'
-    _description = 'Security Logs'
-    _order = 'create_date desc'
-
-    name = fields.Char(string="Event Type", required=True)
-    user_id = fields.Many2one('res.users', string="User")
-    ip_address = fields.Char(string="IP Address")
-    details = fields.Text(string="Details")
-    create_date = fields.Datetime(string="Date", default=fields.Datetime.now)
