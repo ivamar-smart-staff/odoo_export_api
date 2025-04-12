@@ -3,13 +3,11 @@ from odoo.http import request
 import json
 import logging
 
-from odoo.addons.odoo_export_api.controllers.decorators import auto_authenticate
 
 _logger = logging.getLogger(__name__)
 
 class ProductsController(http.Controller):
     @http.route('/api/products/', type='http', auth='none', methods=['GET'], csrf=False)
-    @auto_authenticate
     def get_products(self):
         # Validação do token via header "Authorization"
         auth_header = request.httprequest.headers.get('Authorization')

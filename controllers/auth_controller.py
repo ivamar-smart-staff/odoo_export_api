@@ -5,8 +5,6 @@ import logging
 from functools import wraps
 from datetime import datetime, timedelta
 from odoo.exceptions import ValidationError
-# Importa o seu decorator
-from odoo.addons.odoo_export_api.controllers.decorators import auto_authenticate
 
 _logger = logging.getLogger(__name__)
 
