@@ -1,9 +1,13 @@
 from odoo import http
 from odoo.http import request, Response, Controller
 from werkzeug.exceptions import BadRequest
+from datetime import datetime, time
 import json
 import re
 import logging
+import pytz
+
+from ..utils.date_utils import parse_date
 
 _logger = logging.getLogger(__name__)
 
@@ -29,12 +33,57 @@ class VisitsController(Controller):
                 headers=[("Content-Type", "application/json")]
             )
 
-        page = int(request.params.get('page'))
-        page_size = int(request.params.get('page_size'))
+        # Montagem do domain
+        domain = []
+        company_id_param = request.params.get('company_id')
+        start_date_str = request.params.get('start_date')
+        end_date_str = request.params.get('end_date')
 
+        # Filtro por data
+        if start_date_str and end_date_str:
+            try:
+                start_dt = parse_date(start_date_str)
+                end_dt = parse_date(end_date_str)
+
+                local_tz = pytz.timezone("America/Sao_Paulo")
+                start_dt = local_tz.localize(datetime.combine(start_dt, time.min))
+                end_dt = local_tz.localize(datetime.combine(end_dt, time.max))
+
+                start_utc = start_dt.astimezone(pytz.utc)
+                end_utc = end_dt.astimezone(pytz.utc)
+
+                domain.append(("create_date", ">=", start_utc))
+                domain.append(("create_date", "<=", end_utc))
+
+                _logger.info("Domínio após filtro de datas: %s", domain)
+
+            except Exception as e:
+                _logger.exception("Erro ao converter datas: %s", e)
+                return request.make_response(
+                    json.dumps({
+                        "error": "Erro ao converter as datas. Use um dos formatos: YYYY-MM-DD, YYYY-MM-DDTHH:MM:SS ou DD/MM/YYYY."
+                    }),
+                    status=400,
+                    headers=[("Content-Type", "application/json")]
+                )
+
+        # Filtro por company_id
+        if company_id_param:
+            try:
+                company_id = int(company_id_param)
+                domain.append(("company_id", "=", company_id))
+            except ValueError:
+                return request.make_response(
+                    json.dumps({"error": "O parâmetro 'company_id' deve ser um número inteiro."}),
+                    status=400,
+                    headers=[("Content-Type", "application/json")]
+                )
+
+        # Paginação
+        page = request.params.get('page')
+        page_size = request.params.get('page_size')
         if not page or not page_size:
             raise BadRequest("Os parâmetros 'page' e 'page_size' são obrigatórios na URL.")
-
         try:
             page = int(page)
             page_size = int(page_size)
@@ -43,50 +92,47 @@ class VisitsController(Controller):
 
         offset = (page - 1) * page_size
 
-        leads = request.env['crm.lead'].sudo().search([],offset=offset,limit=page_size)
+        # Busca paginada usando o domain
+        leads = request.env['crm.lead'].sudo().search(
+            domain,
+            offset=offset,
+            limit=page_size
+        )
 
         json_return = []
         for lead in leads:
-            team_member = request.env['crm.team.member'].sudo().search([('email', '=', lead.user_id.login)],limit=1)
-            match lead.company_id.selection_base.id: # todo: adicionar os tipos no futuro
-                case 1:
-                    _logger.info("case 1")
-                    for integra in lead.company_id.vendas_ids:
-                        if not lead.chanel_1:
+            team_member = request.env['crm.team.member'].sudo().search(
+                [('email', '=', lead.user_id.login)],
+                limit=1
+            )
+
+            # Lógica de main_media_id conforme seu case
+            main_media_id = None
+            if lead.company_id.selection_base.id == 1:
+                for integra in lead.company_id.vendas_ids:
+                    if not lead.chanel_1:
+                        main_media_id = None
+                        break
+                    if lead.team_id == integra.team_id:
+                        media_column = integra.stand_id.media_column
+                        midia_nome = re.sub(r'\s*\d+$', '', lead.chanel_1.name.strip())
+                        columns_map = {
+                            'one': 'cod_midia1',
+                            'two': 'cod_midia2',
+                            'three': 'cod_midia3',
+                            'four': 'cod_midia4',
+                            'five': 'cod_midia5',
+                            'six': 'cod_midia6',
+                        }
+                        column_name = columns_map.get(media_column)
+                        if not column_name:
                             main_media_id = None
                             break
-
-                        if lead.team_id == integra.team_id:
-                            _logger.info("achou o team_id")
-                            media_column = integra.stand_id.media_column
-
-
-                            midia_nome = re.sub(r'\s*\d+$', '', lead.chanel_1.name.strip())
-                            columns_map = {
-                                'one': 'cod_midia1',
-                                'two': 'cod_midia2',
-                                'three': 'cod_midia3',
-                                'four': 'cod_midia4',
-                                'five': 'cod_midia5',
-                                'six': 'cod_midia6',
-                            }
-
-                            # Identifica qual coluna deve ser usada com base no 'media_column'
-                            column_name = columns_map.get(media_column)
-                            if not column_name:
-                                main_media_id = None
+                        for midia in lead.company_id.midia_ids:
+                            if midia.nome_midia == midia_nome:
+                                main_media_id = getattr(midia, column_name, None)
                                 break
-
-                            # Percorre as mídias para encontrar a que bate com 'midia_nome'
-                            for midia in lead.company_id.midia_ids:
-                                if midia.nome_midia == midia_nome:
-                                    # Retorna o valor da coluna correta, usando getattr
-                                    main_media_id = getattr(midia, column_name, None)
-                                else:
-                                    main_media_id = None
-
-                                break
-                            break
+                        break
 
             data = {
                 "id": lead.id,
@@ -96,31 +142,27 @@ class VisitsController(Controller):
                 "superintendent_name": None,
                 "indication_broker_name": None,
                 "sales_company_id": lead.team_id.id,
-                # "another": None,
                 "product_id": lead.company_id.id,
                 "customer_id": lead.partner_id.id,
-                "type_of": lead.type_of_visit, # FIRSTCONTACT, RECURRENCE, PHONECONTACT - puxar de dentro do lead
-                "out_of_service": None,  # todo: data de cadastro de lead de uma data diferente do dia de hoje
+                "type_of": lead.type_of_visit,
+                "out_of_service": None,
                 "created": lead.create_date.isoformat() if lead.create_date else None,
-                "justify_id": None, # todo: não sabemos
-                "owner": None, # todo: é pra indicar se já comprou ou n
-                # "indication": False,
-                "created_by": lead.creator_user_id.id, # todo: id do usuário da recep que criou o lead
-                "changed_by": lead.last_editor_id.id, # todo id da ultima pessoa que atualizou o lead
-                "changed_when": lead.write_date.isoformat() if lead.write_date else None, # todo: data da mudança
-                "main_media_id": main_media_id, #todo: id do first channel
-                "deleted": lead.active, # todo: se o lead tá arquivado ou n
-                "corretor_account_id_crm": None, #todo: campo pra adicionar nos corretores da equipe de vendas com o usuário deles (ou adicionar no usuário interno deles)
-                "recebido_crm": False, #todo: talvez uma integração com a tabela de log
-                # "regra3": False,
+                "justify_id": None,
+                "owner": None,
+                "created_by": lead.creator_user_id.id,
+                "changed_by": lead.last_editor_id.id,
+                "changed_when": lead.write_date.isoformat() if lead.write_date else None,
+                "main_media_id": main_media_id,
+                "deleted": not lead.active,
+                "corretor_account_id_crm": None,
+                "recebido_crm": False,
                 "broker_email": lead.user_id.login,
-                "product_type_id": None #todo: se é residencial,
+                "product_type_id": None,
             }
-
-
             json_return.append(data)
 
-        total_count = request.env['crm.lead'].sudo().search_count([])
+        # Total filtrado para paginação
+        total_count = request.env['crm.lead'].sudo().search_count(domain)
         has_next = offset + page_size < total_count
 
         return request.make_response(
@@ -133,7 +175,3 @@ class VisitsController(Controller):
             }),
             headers=[('Content-Type', 'application/json')]
         )
-
-    # _logger.info("Data recebido1: %s", lead.user_id.name)
-    # _logger.info("Data recebido2: %s", team_member.sales_name)
-    # _logger.info("Data recebido3: %s", team_member)

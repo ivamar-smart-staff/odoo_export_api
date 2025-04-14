@@ -1,11 +1,16 @@
 from odoo import http
 from odoo.http import request, Response, Controller
+from datetime import datetime, time, timezone
 import json
 import logging
+import pytz
+
+from ..utils.date_utils import parse_date
 
 _logger = logging.getLogger(__name__)
 
 class SurveyResponsesController(http.Controller):
+
     @http.route('/api/survey/responses/', type='http', auth='none', methods=['GET'], csrf=False)
     def get_all_survey_responses(self):
         # Validação do token via header "Authorization"
@@ -42,6 +47,41 @@ class SurveyResponsesController(http.Controller):
         # Parâmetro opcional para filtrar pela company (pelo id da company)
         domain = []
         company_id_param = request.params.get("company_id")
+        start_date_str = request.params.get("start_date")
+        end_date_str = request.params.get("end_date")
+
+        if start_date_str and end_date_str:
+            try:
+                # Converte para date
+                start_dt = parse_date(start_date_str)
+                end_dt = parse_date(end_date_str)
+
+                # Define timezone local (BR) e aplica hora mínima e máxima
+                local_tz = pytz.timezone("America/Sao_Paulo")
+                start_dt = local_tz.localize(datetime.combine(start_dt, time.min))
+                end_dt = local_tz.localize(datetime.combine(end_dt, time.max))
+
+                # Converte para UTC (sem precisar do ir.utils)
+                start_date = start_dt.astimezone(pytz.utc)
+                end_date = end_dt.astimezone(pytz.utc)
+
+                # Aplica no domínio
+                domain.append(("create_date", ">=", start_date))
+                domain.append(("create_date", "<=", end_date))
+
+                _logger.info("Domínio final: %s", domain)
+
+
+            except Exception as e:
+                _logger.exception("Erro ao converter datas: %s", e)
+                return request.make_response(
+                    json.dumps({
+                        "error": "Erro ao converter as datas. Use um dos formatos: YYYY-MM-DD, YYYY-MM-DDTHH:MM:SS ou DD/MM/YYYY."
+                    }),
+                    status=400,
+                    headers=[("Content-Type", "application/json")]
+                )
+            
         if company_id_param:
             try:
                 company_id = int(company_id_param)
@@ -64,9 +104,14 @@ class SurveyResponsesController(http.Controller):
             "free_time", "buy_property_ids", "venture_ids", "displease_venture_ids"
         ]
         
+        total_all = request.env['crm.lead'].sudo().search_count([
+                        ('company_id', '=', 3)
+                    ])
+
         # Busca as leads com paginação, aplicando o domínio (filtragem por company, se fornecido)
         leads = request.env["crm.lead"].sudo().search(domain, offset=offset, limit=limit)
         total_count = request.env["crm.lead"].sudo().search_count(domain)
+
         
         lead_model = request.env["crm.lead"]
         results = []
