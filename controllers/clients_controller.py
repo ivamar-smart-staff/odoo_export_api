@@ -56,8 +56,17 @@ class ClientsController(Controller):
         # Domínio: Filtra apenas parceiros que não estejam associados a usuários e que não sejam do tipo company
         domain = [
             ('id', 'not in', removed_user_partner_ids),
-            ('is_company', '=', False)
+            ('is_company', '=', False),
         ]
+
+        # Filtro opcional para pesquisar por create_date
+        start_date = request.params.get('start_date')
+        if start_date:
+            domain.append(('create_date', '>=', start_date))
+        # Filtro opcional para pesquisar por create_date
+        end_date = request.params.get('end_date')
+        if end_date:
+            domain.append(('create_date', '>=', end_date))
 
         # Consulta otimizada com paginação
         partners = request.env['res.partner'].sudo().search(
