@@ -62,9 +62,8 @@ class ProductsController(http.Controller):
                 .sudo()
                 .search(
                     [
-                        ("id", "child_of", parent_cats.ids)(
-                            "id", "not in", parent_cats.ids
-                        )
+                        ("id", "child_of", parent_cats.ids),
+                        ("id", "not in", parent_cats.ids),
                     ]
                 )
             )
