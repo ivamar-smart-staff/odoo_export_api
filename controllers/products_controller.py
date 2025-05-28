@@ -52,7 +52,7 @@ class ProductsController(http.Controller):
             # Obter o partner_id do campo Many2one
 
             domain = [
-                ("which_company_ids", "=", comp.id),
+                ("which_company_ids", "=", comp.get("id")),
                 ("parent_id", "!=", False),
             ]
 
