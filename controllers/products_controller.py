@@ -51,14 +51,25 @@ class ProductsController(http.Controller):
         for comp in companies:
             # Obter o partner_id do campo Many2one
 
-            domain = [
-                ("which_company_ids", "=", comp.get("id")),
-                ("parent_id", "!=", False),
-            ]
-
-            category_names = (
-                request.env["product.category"].sudo().search(domain).mapped("name")
+            parent_cats = (
+                request.env["product.category"]
+                .sudo()
+                .search([("which_company_ids", "=", comp.get("id"))])
             )
+
+            all_desc = (
+                resquest.env["product.category"]
+                .sudo()
+                .search(
+                    [
+                        ("id", "child_of", parent_cats.ids)(
+                            "id", "not in", parent_cats.ids
+                        )
+                    ]
+                )
+            )
+
+            sizes = all_desc.mapped("name")
 
             partner_field = comp.get("partner_id")
             lat = None
@@ -95,7 +106,7 @@ class ProductsController(http.Controller):
                 "long": lon if lon else None,
                 "sap": None,
                 "started_when": None,
-                "available_sizes": category_names,
+                "available_sizes": sizes,
             }
             json_return.append(data)
 
