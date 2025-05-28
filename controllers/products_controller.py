@@ -74,7 +74,7 @@ class ProductsController(http.Controller):
             )
 
             # Busca as categorias de produtos que são filhos de uma categoria pai
-            children_size_names = (
+            children_size = (
                 request.env["product.category"]
                 .sudo()
                 .search(
@@ -87,7 +87,7 @@ class ProductsController(http.Controller):
 
             # Agrupa os nomes das categorias por nome do parceiro pai
             sizes_by_parent = {}
-            for cat in children_size_names:
+            for cat in children_size:
                 partner_name = cat.parent_id.name
                 sizes_by_parent.setdefault(partner_name, []).append(cat.name)
 

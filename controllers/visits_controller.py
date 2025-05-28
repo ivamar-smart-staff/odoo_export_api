@@ -118,8 +118,14 @@ class VisitsController(Controller):
                 .search([("email", "=", lead.user_id.login)], limit=1)
             )
 
-            leaf_cats = lead.product_category_ids.filtered(lambda c: not c.child_id)
-            visit_sizes = leaf_cats.mapped("name")
+            # 1) filtra só as categorias “folha” (sem filhos)
+            children_size = lead.product_category_ids.filtered(lambda c: not c.child_id)
+
+            # 2) agrupa por parent → [filhos]
+            sizes_by_parent = {}
+            for cat in children_size:
+                parent_name = cat.parent_id.name or "Sem categoria pai"
+                sizes_by_parent.setdefault(parent_name, []).append(cat.name)
 
             # Lógica de main_media_id conforme seu case
             main_media_id = None
@@ -177,7 +183,7 @@ class VisitsController(Controller):
                 "recebido_crm": False,
                 "broker_email": lead.user_id.login,
                 "product_type_id": None,
-                "visit_size": visit_sizes,
+                "visit_size": sizes_by_parent,
             }
             json_return.append(data)
 
