@@ -49,17 +49,6 @@ class ProductsController(http.Controller):
 
         json_return = []
         for comp in companies:
-            # Obter o partner_id do campo Many2one
-
-            domain = [
-                ("which_company_ids", "=", comp.get("id")),
-                ("parent_id", "!=", False),
-            ]
-
-            size_names = (
-                request.env["product.category"].sudo().search(domain).mapped("name")
-            )
-
             partner_field = comp.get("partner_id")
             lat = None
             lon = None
@@ -82,6 +71,19 @@ class ProductsController(http.Controller):
             address = (
                 " - ".join(filter(None, [comp.get("street"), comp.get("street2")]))
                 + f" - {comp.get('city')}/{state_name}"
+            )
+
+            # Busca os nomes das categorias de produtos disponíveis para a empresa
+            size_names = (
+                request.env["product.category"]
+                .sudo()
+                .search(
+                    [
+                        ("which_company_ids", "=", comp.get("id")),
+                        ("parent_id", "!=", False),
+                    ]
+                )
+                .mapped("name")
             )
 
             data = {
