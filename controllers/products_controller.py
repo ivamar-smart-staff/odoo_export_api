@@ -73,8 +73,8 @@ class ProductsController(http.Controller):
                 + f" - {comp.get('city')}/{state_name}"
             )
 
-            # Busca os nomes das categorias de produtos disponíveis para a empresa
-            size_names = (
+            # Busca as categorias de produtos que são filhos de uma categoria pai
+            children_size_names = (
                 request.env["product.category"]
                 .sudo()
                 .search(
@@ -83,8 +83,13 @@ class ProductsController(http.Controller):
                         ("parent_id", "!=", False),
                     ]
                 )
-                .mapped("name")
             )
+
+            # Agrupa os nomes das categorias por nome do parceiro pai
+            sizes_by_parent = {}
+            for cat in children_size_names:
+                partner_name = cat.parent_id.name
+                sizes_by_parent.setdefault(partner_name, []).append(cat.name)
 
             data = {
                 "id": comp.get("id"),
@@ -97,7 +102,7 @@ class ProductsController(http.Controller):
                 "long": lon if lon else None,
                 "sap": None,
                 "started_when": None,
-                "available_sizes": size_names,
+                "available_sizes": sizes_by_parent,
             }
             json_return.append(data)
 
