@@ -58,7 +58,7 @@ class ProductsController(http.Controller):
             )
 
             all_desc = (
-                resquest.env["product.category"]
+                request.env["product.category"]
                 .sudo()
                 .search(
                     [
