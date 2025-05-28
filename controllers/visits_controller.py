@@ -118,6 +118,9 @@ class VisitsController(Controller):
                 .search([("email", "=", lead.user_id.login)], limit=1)
             )
 
+            leaf_cats = lead.product_category_ids.filtered(lambda c: not c.child_id)
+            visit_sizes = leaf_cats.mapped("name")
+
             # Lógica de main_media_id conforme seu case
             main_media_id = None
             if lead.company_id.selection_base.id == 1:
@@ -174,7 +177,7 @@ class VisitsController(Controller):
                 "recebido_crm": False,
                 "broker_email": lead.user_id.login,
                 "product_type_id": None,
-                "visit_size": lead.product_category_ids.mapped("name"),
+                "visit_size": visit_sizes,
             }
             json_return.append(data)
 
