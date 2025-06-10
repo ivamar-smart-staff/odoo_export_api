@@ -9,6 +9,7 @@ from ..utils.date_utils import parse_date
 
 _logger = logging.getLogger(__name__)
 
+
 class SurveyResponsesController(http.Controller):
 
     @http.route('/api/survey/responses/', type='http', auth='none', methods=['GET'], csrf=False)
@@ -31,7 +32,7 @@ class SurveyResponsesController(http.Controller):
                 status=401,
                 headers=[("Content-Type", "application/json")]
             )
-        
+
         # Obtenção e validação dos parâmetros de paginação
         try:
             page = int(request.params.get("page", 1))
@@ -43,7 +44,7 @@ class SurveyResponsesController(http.Controller):
                 headers=[("Content-Type", "application/json")]
             )
         offset = (page - 1) * limit
-        
+
         # Parâmetro opcional para filtrar pela company (pelo id da company)
         domain = []
         company_id_param = request.params.get("company_id")
@@ -81,7 +82,7 @@ class SurveyResponsesController(http.Controller):
                     status=400,
                     headers=[("Content-Type", "application/json")]
                 )
-            
+
         if company_id_param:
             try:
                 company_id = int(company_id_param)
@@ -92,27 +93,42 @@ class SurveyResponsesController(http.Controller):
                     status=400,
                     headers=[("Content-Type", "application/json")]
                 )
-        
+
         # Lista de campos do crm.lead que fazem parte do survey
+        '''Campos retirados: 
+        is_filhos
+        monthly_income
+        search_duration
+        change_duration
+        tamanho
+        buscando
+        incorporadora
+        aqua
+        falta
+        interessado
+        review1
+        review2
+        review4
+        review5
+        attention
+        '''
         text_fields = [
-            "filhos", "is_filhos", "profession_list", "monthly_income", "reason_for_property",
-            "search_duration", "change_duration", "tamanho", "buscando", "incorporadora",
-            "aqua", "interessado", "falta", "review1", "review2", "review3", "review4", "review5",
-            "attention"
+            "filhos", "children_living", "profession_list", "monthly_income_new", "age_limit",
+            "reason_for_property", "communicao_selection", "tamanho_new", "buscando_new",
+            "incorporadora_selection", "aqua_selection_new", "review1_new", "review3_new"
         ]
         options_fields = [
             "free_time", "buy_property_ids", "venture_ids", "displease_venture_ids"
         ]
-        
+
         total_all = request.env['crm.lead'].sudo().search_count([
-                        ('company_id', '=', 3)
-                    ])
+            ('company_id', '=', 3)
+        ])
 
         # Busca as leads com paginação, aplicando o domínio (filtragem por company, se fornecido)
         leads = request.env["crm.lead"].sudo().search(domain, offset=offset, limit=limit)
         total_count = request.env["crm.lead"].sudo().search_count(domain)
 
-        
         lead_model = request.env["crm.lead"]
         results = []
         for lead in leads:
@@ -125,14 +141,15 @@ class SurveyResponsesController(http.Controller):
                     if field_obj.type == "boolean":
                         text_questions[label] = value if value is not None else False
                     elif field_obj.type == "selection":
-                        selection_options = field_obj.selection(lead.env) if callable(field_obj.selection) else field_obj.selection
+                        selection_options = field_obj.selection(lead.env) if callable(
+                            field_obj.selection) else field_obj.selection
                         selections_dict = dict(selection_options)
                         text_questions[label] = selections_dict.get(value, value)
                     else:
                         text_questions[label] = value if value is not None else ""
                 else:
                     text_questions[label] = value if value is not None else ""
-            
+
             options_questions = {}
             for field in options_fields:
                 label = lead_model._fields[field].string if field in lead_model._fields else field
@@ -141,7 +158,7 @@ class SurveyResponsesController(http.Controller):
                     options_questions[label] = value.mapped("name") if value else []
                 else:
                     options_questions[label] = value if value is not None else ""
-            
+
             res = {
                 "lead_id": lead.id,
                 "user_id": lead.user_id.id if lead.user_id else None,
@@ -149,7 +166,7 @@ class SurveyResponsesController(http.Controller):
                 "options_questions": options_questions,
             }
             results.append(res)
-        
+
         has_next = offset + limit < total_count
         response_data = {
             "data": results,
@@ -158,7 +175,7 @@ class SurveyResponsesController(http.Controller):
             "total_count": total_count,
             "has_next": has_next
         }
-        
+
         return request.make_response(
             json.dumps(response_data, ensure_ascii=False),
             headers=[("Content-Type", "application/json")]
