@@ -171,8 +171,7 @@ class VisitsController(Controller):
                     "name": lead.type_of_visit,
                     "sub_type_of": lead.type_of_visit2 or None
                 },
-                "out_of_hours": lead.fora_do_expediente,
-                "out_of_service": None,
+                "out_of_service": lead.fora_do_expediente,
                 "created": lead.create_date.isoformat() if lead.create_date else None,
                 "justify_id": None,
                 "owner": None,
