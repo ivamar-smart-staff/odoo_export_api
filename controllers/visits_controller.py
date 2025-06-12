@@ -167,7 +167,11 @@ class VisitsController(Controller):
                 "sales_company_id": lead.team_id.id,
                 "product_id": lead.company_id.id,
                 "customer_id": lead.partner_id.id,
-                "type_of": lead.type_of_visit,
+                "type_of": {
+                    "name": lead.type_of_visit,
+                    "sub_type_of": lead.type_of_visit2 or None
+                },
+                "out_of_hours": lead.fora_do_expediente,
                 "out_of_service": None,
                 "created": lead.create_date.isoformat() if lead.create_date else None,
                 "justify_id": None,
