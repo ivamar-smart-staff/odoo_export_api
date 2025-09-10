@@ -163,7 +163,7 @@ class VisitsController(Controller):
                 ),
                 "manager_name": team_member.crm_team_id.user_id.name,
                 "superintendent_name": None,
-                "indication_broker_name": lead.sales_indicao_team_id.name if lead.sales_indicao_team_id.name and lead.type_of_visit2 == 'Indicação corretor' else None,
+                "indication_broker_name": lead.sales_indicao_id.name if lead.sales_indicao_id.name and lead.type_of_visit2 == 'Indicação corretor' else None,
                 "sales_company_id": lead.team_id.id,
                 "product_id": lead.company_id.id,
                 "customer_id": lead.partner_id.id,
