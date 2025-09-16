@@ -157,13 +157,13 @@ class VisitsController(Controller):
 
             data = {
                 "id": lead.id,
-                "third_party_id": None,
+                "third_party_id": lead.partner_id.third_party_id or None,
                 "broker_name": " - ".join(
                     filter(None, [lead.user_id.name, team_member.sales_name])
                 ),
                 "manager_name": team_member.crm_team_id.user_id.name,
                 "superintendent_name": None,
-                "indication_broker_name": None,
+                "indication_broker_name": lead.sales_indicao_id.name if lead.sales_indicao_id.name and lead.type_of_visit2 == 'Indicação corretor' else None,
                 "sales_company_id": lead.team_id.id,
                 "product_id": lead.company_id.id,
                 "customer_id": lead.partner_id.id,

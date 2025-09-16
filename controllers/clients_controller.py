@@ -103,6 +103,7 @@ class ClientsController(Controller):
             street = ' '.join(filter(None, [p.street, p.street2]))
             data.append({
                 "id": p.id,
+                "third_party_id": p.third_party_id or None,
                 "name": p.name,
                 "birth_date": p.dob.isoformat() if p.dob else None,
                 "address": street,

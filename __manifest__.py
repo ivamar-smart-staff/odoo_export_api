@@ -6,8 +6,8 @@
         This module adds JWT authentication capabilities to Odoo
         with a single endpoint to generate tokens.
     """,
-    'author': 'Rony Amorim',
-    'depends': ['base', 'web'],
+    'author': 'Rony & Gerbi',
+    'depends': ['base', 'web', 'crm', 'smarts_hub'],
     'data': [
         'security/ir.model.access.csv',
         'views/jwt_token_views.xml',
