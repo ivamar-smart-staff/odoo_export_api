@@ -86,10 +86,17 @@ class ProductsController(http.Controller):
             )
 
             # Agrupa os nomes das categorias por nome do parceiro pai
-            sizes_by_parent = {}
+            sizes_by_parent_map = {}
             for cat in children_size:
-                partner_name = cat.parent_id.name
-                sizes_by_parent.setdefault(partner_name, []).append(cat.name)
+                parent_name = cat.parent_id.name
+                parent_id = cat.parent_id.id
+                if parent_name not in sizes_by_parent_map:
+                    sizes_by_parent_map[parent_name] = {"id": parent_id, "sizes": []}
+                sizes_by_parent_map[parent_name]["sizes"].append(cat.name)
+            sizes_by_parent = [
+                {"id": data["id"], name: data["sizes"]}
+                for name, data in sizes_by_parent_map.items()
+            ]
 
             data = {
                 "id": comp.get("id"),
