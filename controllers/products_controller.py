@@ -92,7 +92,7 @@ class ProductsController(http.Controller):
                 parent_id = cat.parent_id.id
                 if parent_name not in sizes_by_parent_map:
                     sizes_by_parent_map[parent_name] = {"id": parent_id, "sizes": []}
-                sizes_by_parent_map[parent_name]["sizes"].append(cat.name)
+                sizes_by_parent_map[parent_name]["sizes"].append({"id": cat.id, "metric": cat.name})
             sizes_by_parent = [
                 {"id": data["id"], name: data["sizes"]}
                 for name, data in sizes_by_parent_map.items()
