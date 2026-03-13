@@ -118,14 +118,14 @@ class VisitsController(Controller):
                 .search([("email", "=", lead.user_id.login)], limit=1)
             )
 
-            # 1) filtra só as categorias “folha” (sem filhos)
+            # filtra só as categorias “folha” (sem filhos)
             children_size = lead.product_category_ids.filtered(lambda c: not c.child_id)
 
-            # 2) agrupa por parent → [filhos]
+            # agrupa por parent → [filhos]
             sizes_by_parent = {}
             for cat in children_size:
                 parent_name = cat.parent_id.name or "Sem categoria pai"
-                sizes_by_parent.setdefault(parent_name, []).append(cat.name)
+                sizes_by_parent = {"id": cat.parent_id.id, parent_name: {"id": cat.id, "metric": cat.name}}
 
             # Lógica de main_media_id conforme seu case
             main_media_id = None
