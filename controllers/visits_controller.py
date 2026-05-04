@@ -157,7 +157,7 @@ class VisitsController(Controller):
 
             data = {
                 "id": lead.id,
-                "third_party_id": lead.partner_id.third_party_id or None,
+                "third_party_id": lead.third_party_id or None,
                 "broker_name": " - ".join(
                     filter(None, [lead.user_id.name, team_member.sales_name])
                 ),
